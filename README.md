@@ -8,7 +8,7 @@ Dayalog은 PHP + MySQL 기반의 간단한 미니 SNS 템플릿입니다.
 1. 압축을 풀고 `dayalog` 폴더를 XAMPP의 `htdocs`에 복사하세요.
 2. `config/db.php`의 DB 정보(host, dbname, user, pass)를 본인의 MySQL 설정으로 수정하세요.
 3. `schema.sql`을 MySQL에 적용하여 테이블을 생성하세요. (phpMyAdmin에서 import 가능)
-4. `uploads/` 폴더에 웹서버가 쓰기 권한을 가지도록 설정하세요.
+4. `uploads/` 폴더에 웹서버가 쓰기 권한을 가지도록 설정하세요.(755)
 5. 브라우저에서 `http://localhost/dayalog/public/`로 접속하세요.
 
 ## 포함 기능
