@@ -1,0 +1,9 @@
+Options -Indexes
+RewriteEngine On
+
+# 정적 파일(CSS, JS, 이미지 등)은 그대로 접근 허용
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteCond %{REQUEST_FILENAME} !-d
+
+# 나머지 모든 요청은 index.php로 전달
+RewriteRule ^(.*)$ index.php?route=$1 [L,QSA]
