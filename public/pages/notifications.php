@@ -50,7 +50,7 @@ require_once INCLUDES_PATH . '/header.php';
             $is_unread = !$notification['is_read'];
             ?>
             <a href="<?php echo $link; ?>" class="notification-item <?php echo $is_unread ? 'unread' : ''; ?>">
-              <img src="<?php echo getProfileImageUrl($notification['from_profile_img']); ?>" 
+              <img src="<?php echo getProfileImageUrl($notification['from_profile_img'] ?? ''); ?>" 
                    class="notification-avatar" alt="profile">
               
               <div class="notification-content">
@@ -62,11 +62,11 @@ require_once INCLUDES_PATH . '/header.php';
                 </div>
                 
                 <?php if($notification['type'] === 'like' || $notification['type'] === 'comment'): ?>
-                  <?php if($notification['post_image']): ?>
+                  <?php if(!empty($notification['post_image'])): ?>
                     <div class="notification-preview">
                       <img src="<?php echo getUploadUrl($notification['post_image']); ?>" alt="post">
                     </div>
-                  <?php elseif($notification['post_content']): ?>
+                  <?php elseif(!empty($notification['post_content'])): ?>
                     <div class="notification-preview-text">
                       <?php echo mb_substr(htmlspecialchars($notification['post_content']), 0, 50) . '...'; ?>
                     </div>
@@ -74,7 +74,7 @@ require_once INCLUDES_PATH . '/header.php';
                 <?php endif; ?>
                 
                 <?php if($notification['type'] === 'comment' || $notification['type'] === 'reply'): ?>
-                  <?php if($notification['comment_content']): ?>
+                  <?php if(!empty($notification['comment_content'])): ?>
                     <div class="notification-preview-text">
                       <?php echo mb_substr(htmlspecialchars($notification['comment_content']), 0, 50) . '...'; ?>
                     </div>

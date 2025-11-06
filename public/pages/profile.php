@@ -12,8 +12,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $nickname = trim($_POST['nickname'] ?? '');
     $bio = trim($_POST['bio'] ?? '');
     $new_username = trim($_POST['username'] ?? '');
-    $is_private = isset($_POST['is_private']) ? 1 : 0;
-    $dm_permission = $_POST['dm_permission'] ?? 'everyone';
+    $is_private = isset($_POST['is_private']) ? 1 : 0; // 체크박스 값 처리
     
     if (!$nickname) $errors[] = '닉네임은 필수입니다.';
     
@@ -78,10 +77,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
     
     if (empty($errors)) {
-        $stmt = $pdo->prepare("UPDATE users SET nickname = ?, bio = ?, profile_img = ?, is_private = ?, dm_permission = ? WHERE user_id = ?");
-        $stmt->execute([$nickname, $bio, $profile_img, $is_private, $dm_permission, $_SESSION['user']['user_id']]);
+        // is_private 필드 추가
+        $stmt = $pdo->prepare("UPDATE users SET nickname = ?, bio = ?, profile_img = ?, is_private = ? WHERE user_id = ?");
+        $stmt->execute([$nickname, $bio, $profile_img, $is_private, $_SESSION['user']['user_id']]);
         
-        $stmt = $pdo->prepare("SELECT * FROM users WHERE user_id = ?");
+        $stmt = $pdo->prepare("SELECT user_id, username, nickname, email, profile_img, bio, is_private, created_at FROM users WHERE user_id = ?");
         $stmt->execute([$_SESSION['user']['user_id']]);
         $_SESSION['user'] = $stmt->fetch();
         $_SESSION['success_message'] = '프로필이 업데이트되었습니다.';
@@ -89,7 +89,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         exit;
     }
 }
-
 $stmt = $pdo->prepare("SELECT * FROM cover_images WHERE user_id = ? ORDER BY display_order ASC, created_at DESC");
 $stmt->execute([$user['user_id']]);
 $cover_images = $stmt->fetchAll();
@@ -121,6 +120,7 @@ require_once INCLUDES_PATH . '/header.php';
             unset($_SESSION['success_message']);
           ?>
           <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+          
         </div>
       <?php endif; ?>
       
@@ -129,29 +129,34 @@ require_once INCLUDES_PATH . '/header.php';
         <h5 class="mb-3">헤더 이미지</h5>
         
         <?php if(!empty($cover_images)): ?>
+          <!-- 스와이퍼 미리보기 -->
           <div class="header-preview-swiper mb-4">
-            <div class="swiper-container" id="headerSwiper">
-              <div class="swiper-wrapper">
-                <?php foreach($cover_images as $cover): ?>
-                <div class="swiper-slide">
-                  <img src="<?php echo '../'.htmlspecialchars($cover['image_path']); ?>" alt="header">
-                </div>
-                <?php endforeach; ?>
-              </div>
-              <div class="swiper-button-prev"></div>
-              <div class="swiper-button-next"></div>
-              <div class="swiper-pagination"></div>
-            </div>
-            <div class="header-controls">
-              <label style="display: flex; align-items: center; gap: 8px; margin: 0; font-size: 14px; cursor: pointer;">
-                <input type="checkbox" id="autoplayToggle" class="toggle-checkbox" checked>
-                <span>자동 슬라이드</span>
-              </label>
-              <span id="autoplayStatus">켜짐</span>
-            </div>
-          </div>
+  <div class="swiper-container" id="headerSwiper">
+    <div class="swiper-wrapper">
+      <?php foreach($cover_images as $cover): ?>
+      <div class="swiper-slide">
+        <img src="<?php echo '../'.htmlspecialchars($cover['image_path']); ?>" alt="header">
+      </div>
+      <?php endforeach; ?>
+    </div>
+ <div class="swiper-button-prev"></div>
+    <div class="swiper-button-next"></div>
+
+   <div class="swiper-pagination"></div>
+  </div>
+
+             <div class="header-controls">
+    <label style="display: flex; align-items: center; gap: 8px; margin: 0; font-size: 14px; cursor: pointer;">
+      <input type="checkbox" id="autoplayToggle" class="toggle-checkbox" checked>
+      <span>자동 슬라이드</span>
+    </label>
+    <span id="autoplayStatus">켜짐</span>
+  </div>
+</div>
+          
         <?php endif; ?>
         
+        <!-- 현재 헤더 이미지들 -->
         <div class="cover-images-grid" id="coverImagesContainer">
           <?php if(empty($cover_images)): ?>
             <div class="empty-covers">
@@ -163,32 +168,35 @@ require_once INCLUDES_PATH . '/header.php';
               <p>등록된 헤더 이미지가 없습니다</p>
             </div>
           <?php else: ?>
-            <?php foreach($cover_images as $cover): ?>
-            <div class="cover-item <?php echo $cover['is_active'] ? 'active' : ''; ?>" data-cover-id="<?php echo $cover['cover_id']; ?>" draggable="true">
-              <input type="checkbox" class="image-checkbox" data-cover-id="<?php echo $cover['cover_id']; ?>">
-              <img src="<?php echo '../'.htmlspecialchars($cover['image_path']); ?>" alt="cover">
-              <div class="cover-actions">
-                <button class="btn-cover-action" onclick="setActiveCover(<?php echo $cover['cover_id']; ?>)" title="활성화">
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="<?php echo $cover['is_active'] ? 'currentColor' : 'none'; ?>" stroke="currentColor" stroke-width="2">
-                    <polyline points="20 6 9 17 4 12"></polyline>
-                  </svg>
-                </button>
-                <button class="btn-cover-action btn-delete" onclick="deleteCover(<?php echo $cover['cover_id']; ?>)" title="삭제">
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <polyline points="3 6 5 6 21 6"></polyline>
-                    <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
-                  </svg>
-                </button>
+          
+              <?php foreach($cover_images as $cover): ?>
+              <div class="cover-item <?php echo $cover['is_active'] ? 'active' : ''; ?>" data-cover-id="<?php echo $cover['cover_id']; ?>" draggable="true">
+                <input type="checkbox" class="image-checkbox" data-cover-id="<?php echo $cover['cover_id']; ?>">
+                <img src="<?php echo '../'.htmlspecialchars($cover['image_path']); ?>" alt="cover">
+                <div class="cover-actions">
+                  <button class="btn-cover-action" onclick="setActiveCover(<?php echo $cover['cover_id']; ?>)" title="활성화">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="<?php echo $cover['is_active'] ? 'currentColor' : 'none'; ?>" stroke="currentColor" stroke-width="2">
+                      <polyline points="20 6 9 17 4 12"></polyline>
+                    </svg>
+                  </button>
+                  <button class="btn-cover-action btn-delete" onclick="deleteCover(<?php echo $cover['cover_id']; ?>)" title="삭제">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                      <polyline points="3 6 5 6 21 6"></polyline>
+                      <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                    </svg>
+                  </button>
+                </div>
+                <div class="drag-handle">⋮⋮</div>
+                <?php if($cover['is_active']): ?>
+                  <div class="active-badge">활성</div>
+                <?php endif; ?>
               </div>
-              <div class="drag-handle">⋮⋮</div>
-              <?php if($cover['is_active']): ?>
-                <div class="active-badge">활성</div>
-              <?php endif; ?>
+              <?php endforeach; ?>
             </div>
-            <?php endforeach; ?>
           <?php endif; ?>
         </div>
         
+        <!-- 헤더 이미지 추가 -->
         <form method="post" action="add_cover.php" enctype="multipart/form-data" id="addCoverForm">
           <div class="d-flex gap-2">
             <label class="btn btn-outline-primary flex-grow-1">
@@ -228,8 +236,7 @@ require_once INCLUDES_PATH . '/header.php';
             </label>
           </div>
         </div>
-        
-        <div class="mb-4">
+               <div class="mb-4">
           <div class="form-check form-switch">
             <input class="form-check-input" type="checkbox" name="is_private" id="isPrivateSwitch" 
                    <?php echo ($user['is_private'] ?? 0) ? 'checked' : ''; ?>>
@@ -242,46 +249,7 @@ require_once INCLUDES_PATH . '/header.php';
           </div>
         </div>
 
-        <hr class="my-4">
-        
-        <!-- DM 수신 설정 -->
-        <div class="settings-section mb-4">
-          <h5 class="settings-title">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
-            </svg>
-            DM 수신 설정
-          </h5>
-          
-          <div class="setting-item">
-            <label class="setting-label">
-              <input type="radio" 
-                     name="dm_permission" 
-                     value="everyone" 
-                     <?php echo ($user['dm_permission'] ?? 'everyone') === 'everyone' ? 'checked' : ''; ?>>
-              <div class="setting-text">
-                <strong>모든 사람</strong>
-                <small>누구나 메시지를 보낼 수 있습니다</small>
-              </div>
-            </label>
-          </div>
-          
-          <div class="setting-item">
-            <label class="setting-label">
-              <input type="radio" 
-                     name="dm_permission" 
-                     value="followers" 
-                     <?php echo ($user['dm_permission'] ?? 'everyone') === 'followers' ? 'checked' : ''; ?>>
-              <div class="setting-text">
-                <strong>팔로워만</strong>
-                <small>서로 팔로우 중인 사람만 메시지를 보낼 수 있습니다</small>
-              </div>
-            </label>
-          </div>
-        </div>
-
-        <hr class="my-4">
-        
+      <hr class="my-4">
         <div class="mb-3">
           <label class="form-label">닉네임</label>
           <input class="form-control" name="nickname" value="<?php echo htmlspecialchars($user['nickname']); ?>" required>
@@ -309,9 +277,9 @@ require_once INCLUDES_PATH . '/header.php';
         </div>
         
         <div class="d-grid gap-2">
-          <button type="submit" class="btn btn-primary">저장</button>
-          <a href="user_profile.php?id=<?php echo $user['user_id']; ?>" class="btn btn-outline-secondary">취소</a>
-        </div>
+  <button type="submit" class="btn btn-primary">저장</button>
+  <a href="<?php echo BASE_URL; ?>/pages/user_profile.php?id=<?php echo $user['user_id']; ?>" class="btn btn-outline-secondary">취소</a>
+</div>
       </form>
       
       <hr class="my-4">
@@ -328,73 +296,17 @@ require_once INCLUDES_PATH . '/header.php';
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/Swiper/11.0.5/swiper-bundle.min.css">
 
 <style>
-.settings-section {
-  background: var(--bg-secondary);
-  border: 1px solid var(--border-color);
-  border-radius: 12px;
-  padding: 20px;
-}
+  #coverImagesContainer {
+   display: grid;
 
-.settings-title {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  font-size: 16px;
-  font-weight: 600;
-  margin-bottom: 16px;
-  color: var(--text-primary);
-}
-
-.setting-item {
-  padding: 12px 0;
-  border-bottom: 1px solid var(--border-color);
-}
-
-.setting-item:last-child {
-  border-bottom: none;
-}
-
-.setting-label {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  cursor: pointer;
-  width: 100%;
-}
-
-.setting-label input[type="radio"] {
-  width: 20px;
-  height: 20px;
-  cursor: pointer;
-  flex-shrink: 0;
-}
-
-.setting-text {
-  flex: 1;
-}
-
-.setting-text strong {
-  display: block;
-  color: var(--text-primary);
-  margin-bottom: 4px;
-  font-size: 15px;
-}
-
-.setting-text small {
-  color: var(--text-secondary);
-  font-size: 13px;
-}
-
-/* 기존 스타일 유지 */
-#coverImagesContainer {
-  display: grid;
-  place-items: center;
-  grid-template-columns: repeat(3, minmax(340px, 1fr));
+  place-items: center; /* 중앙 정렬 */
+  grid-template-columns: repeat(3, minmax(340px, 1fr)); /* PC 기본 크기 키움 */
   gap: 24px;
   width: 100%;
   max-width: 1200px; 
   margin: 1.5rem auto 0;
 }
+
 
 @media (min-width: 1025px) {
   #coverImagesContainer {
@@ -402,6 +314,7 @@ require_once INCLUDES_PATH . '/header.php';
   }
 }
 
+/* 태블릿~모바일: 2열 */
 @media (max-width: 1024px) {
   #coverImagesContainer {
     grid-template-columns: repeat(2, 1fr);
@@ -409,6 +322,7 @@ require_once INCLUDES_PATH . '/header.php';
   }
 }
 
+/* 모바일 작은 화면: 1~2열 */
 @media (max-width: 640px) {
   #coverImagesContainer {
     grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
@@ -416,7 +330,7 @@ require_once INCLUDES_PATH . '/header.php';
   }
 }
 
-#headerSwiper {
+  #headerSwiper {
   width: 100%;
   height: 250px;
   position: relative;
@@ -425,13 +339,13 @@ require_once INCLUDES_PATH . '/header.php';
   box-shadow: 0 2px 8px rgba(0,0,0,0.1);
 }
 
+/* 슬라이드 이미지 */
 #headerSwiper img {
   width: 100%;
   height: 100%;
   object-fit: cover;
   display: block;
 }
-
 .header-preview-swiper {
   position: relative;
   margin-bottom: 1.5rem;
@@ -443,7 +357,6 @@ require_once INCLUDES_PATH . '/header.php';
   align-items: center;
   gap: 12px;
 }
-
 .cover-images-grid {
   display: grid;
   width: 100%;
@@ -451,37 +364,36 @@ require_once INCLUDES_PATH . '/header.php';
   gap: 20px;
   margin-top: 1.5rem;
 }
-
 .cover-item {
-  position: relative;
+ position: relative;
   aspect-ratio: 16 / 9;
   border-radius: 12px;
   overflow: hidden;
-  border: 2px solid var(--border-color);
+  border: 2px solid var(--border-color, #333);
   transition: transform 0.2s, border-color 0.2s;
 }
+
 
 .cover-item.active {
   border-color: var(--primary-color);
   box-shadow: 0 0 0 2px rgba(86, 105, 254, 0.2);
 }
-
 .cover-item:hover {
-  transform: scale(1.05);
+   transform: scale(1.05);
+  border-color: var(--accent-color, #4a90e2);
 }
+
 
 .cover-item.dragging {
   opacity: 0.7;
   cursor: grabbing;
 }
-
 .cover-item img {
-  width: 100%;
+   width: 100%;
   height: 100%;
   object-fit: cover;
   display: block;
 }
-
 .image-checkbox {
   position: absolute;
   top: 10px;
@@ -616,15 +528,23 @@ require_once INCLUDES_PATH . '/header.php';
 }
 
 .swiper-button-prev, .swiper-button-next {
-  color: white;
+   color: white;
   background: rgba(0,0,0,0.5);
   width: 45px;
   height: 45px;
   border-radius: 50%;
+  top: 50%;
+  transform: translateY(-50%);
 }
-
 .swiper-button-prev:hover, .swiper-button-next:hover {
-  background: rgba(0,0,0,0.8);
+   background: rgba(0,0,0,0.8);
+}
+.swiper-pagination {
+  position: absolute;
+  bottom: 10px;
+  left: 0;
+  right: 0;
+  text-align: center;
 }
 
 .swiper-pagination-bullet {
@@ -652,6 +572,7 @@ let swiper = null;
 let autoplayEnabled = true;
 let draggedItem = null;
 
+// 스와이퍼 초기화
 function initSwiper() {
   const swiperEl = document.getElementById('headerSwiper');
   if (!swiperEl) return;
@@ -665,6 +586,7 @@ function initSwiper() {
   });
 }
 
+// 자동 슬라이드 토글
 document.getElementById('autoplayToggle')?.addEventListener('click', function() {
   autoplayEnabled = this.checked;
   if (swiper) {
@@ -678,6 +600,7 @@ document.getElementById('autoplayToggle')?.addEventListener('click', function() 
   }
 });
 
+// 체크박스 이벤트
 document.querySelectorAll('.image-checkbox').forEach(checkbox => {
   checkbox.addEventListener('change', updateBatchButtons);
 });
@@ -688,11 +611,12 @@ function updateBatchButtons() {
   document.getElementById('deselectBtn').style.display = selectedCount > 0 ? 'block' : 'none';
 }
 
+// 일괄 삭제
 document.getElementById('deleteBatchBtn')?.addEventListener('click', function() {
   const selected = Array.from(document.querySelectorAll('.image-checkbox:checked')).map(cb => cb.dataset.coverId);
   if (selected.length === 0 || !confirm(`${selected.length}개 이미지를 삭제하시겠습니까?`)) return;
   
-  fetch('delete_covers_batch.php', {
+  fetch('pages/delete_covers_batch.php', {
     method: 'POST',
     headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
     body: 'cover_ids=' + selected.join(',')
@@ -700,19 +624,21 @@ document.getElementById('deleteBatchBtn')?.addEventListener('click', function() 
   .then(res => res.json())
   .then(data => {
     if (data.success) {
-      location.reload();
-    } else {
-      showNotification(data.message, 'error');
+      selected.forEach(id => document.querySelector(`[data-cover-id="${id}"]`).remove());
+      updateBatchButtons();
+      showNotification('선택된 이미지가 삭제되었습니다.', 'success');
     }
   })
   .catch(err => showNotification('삭제 실패', 'error'));
 });
 
+// 선택 해제
 document.getElementById('deselectBtn')?.addEventListener('click', function() {
   document.querySelectorAll('.image-checkbox:checked').forEach(cb => cb.checked = false);
   updateBatchButtons();
 });
 
+// 프로필 이미지 미리보기
 document.getElementById('profileImageInput')?.addEventListener('change', function(e) {
   if (e.target.files && e.target.files[0]) {
     const reader = new FileReader();
@@ -721,33 +647,41 @@ document.getElementById('profileImageInput')?.addEventListener('change', functio
   }
 });
 
+// 헤더 활성화
 function setActiveCover(coverId) {
   const formData = new FormData();
   formData.append('cover_id', coverId);
   
-  fetch('set_active_cover.php', { method: 'POST', body: formData })
+  fetch('pages/set_active_cover.php', { method: 'POST', body: formData })
   .then(res => res.json())
   .then(data => {
     if (data.success) {
-      location.reload();
-    } else {
-      showNotification(data.message, 'error');
+      document.querySelectorAll('.cover-item').forEach(item => {
+        item.classList.remove('active');
+        item.querySelector('.active-badge')?.remove();
+      });
+      const activeItem = document.querySelector(`[data-cover-id="${coverId}"]`);
+      activeItem.classList.add('active');
+      activeItem.innerHTML += '<div class="active-badge">활성</div>';
+      showNotification('헤더 이미지가 변경되었습니다.', 'success');
     }
   })
   .catch(err => showNotification('변경 실패', 'error'));
 }
 
+// 헤더 삭제
 function deleteCover(coverId) {
   if (!confirm('이 헤더 이미지를 삭제하시겠습니까?')) return;
   
   const formData = new FormData();
   formData.append('cover_id', coverId);
   
+  // 경로 수정
   fetch('delete_cover.php', { method: 'POST', body: formData })
   .then(res => res.json())
   .then(data => {
     if (data.success) {
-      location.reload();
+      location.reload(); // 페이지 새로고침으로 변경
     } else {
       showNotification(data.message, 'error');
     }
@@ -755,6 +689,75 @@ function deleteCover(coverId) {
   .catch(err => showNotification('삭제 실패', 'error'));
 }
 
+// 활성화 함수 수정
+function setActiveCover(coverId) {
+  const formData = new FormData();
+  formData.append('cover_id', coverId);
+  
+  // 경로 수정
+  fetch('set_active_cover.php', { method: 'POST', body: formData })
+  .then(res => res.json())
+  .then(data => {
+    if (data.success) {
+      location.reload(); // 페이지 새로고침으로 변경
+    } else {
+      showNotification(data.message, 'error');
+    }
+  })
+  .catch(err => showNotification('변경 실패', 'error'));
+}
+
+// 순서 저장 함수 수정
+function saveCoverOrder() {
+  const order = Array.from(document.querySelectorAll('.cover-item')).map((item, idx) => ({
+    id: parseInt(item.dataset.coverId),
+    order: idx
+  }));
+  
+  // 경로 수정
+  fetch('update_cover_order.php', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(order)
+  })
+  .then(res => res.json())
+  .then(data => {
+    if (data.success) {
+      updateSwiperOrder();
+      showNotification(data.message, 'success');
+    } else {
+      showNotification(data.message, 'error');
+    }
+  })
+  .catch(err => {
+    console.error('Order save error:', err);
+    showNotification('순서 저장에 실패했습니다', 'error');
+  });
+}
+
+// 일괄 삭제 수정
+document.getElementById('deleteBatchBtn')?.addEventListener('click', function() {
+  const selected = Array.from(document.querySelectorAll('.image-checkbox:checked')).map(cb => cb.dataset.coverId);
+  if (selected.length === 0 || !confirm(`${selected.length}개 이미지를 삭제하시겠습니까?`)) return;
+  
+  // 경로 수정
+  fetch('delete_covers_batch.php', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+    body: 'cover_ids=' + selected.join(',')
+  })
+  .then(res => res.json())
+  .then(data => {
+    if (data.success) {
+      location.reload(); // 페이지 새로고침으로 변경
+    } else {
+      showNotification(data.message, 'error');
+    }
+  })
+  .catch(err => showNotification('삭제 실패', 'error'));
+});
+
+// 드래그 앤 드롭
 document.addEventListener('dragstart', e => {
   if (e.target.closest('.cover-item')) {
     draggedItem = e.target.closest('.cover-item');
@@ -776,19 +779,40 @@ document.addEventListener('drop', e => {
 
 document.addEventListener('dragend', () => draggedItem?.classList.remove('dragging'));
 
+// 순서 저장
 function saveCoverOrder() {
   const order = Array.from(document.querySelectorAll('.cover-item')).map((item, idx) => ({
     id: parseInt(item.dataset.coverId),
     order: idx
   }));
   
+  console.log('Saving order:', order);
+  
+  // 경로 수정: pages/ 제거
   fetch('update_cover_order.php', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(order)
   })
-  .then(res => res.json())
+  .then(async res => {
+    console.log('Response status:', res.status);
+    
+    const text = await res.text();
+    console.log('Response text:', text);
+    
+    if (!text) {
+      throw new Error('서버 응답이 비어있습니다.');
+    }
+    
+    try {
+      return JSON.parse(text);
+    } catch (e) {
+      console.error('JSON parse error:', e);
+      throw new Error('서버 응답 형식이 올바르지 않습니다: ' + text);
+    }
+  })
   .then(data => {
+    console.log('Response data:', data);
     if (data.success) {
       updateSwiperOrder();
       showNotification(data.message || '순서가 변경되었습니다.', 'success');
@@ -798,10 +822,10 @@ function saveCoverOrder() {
   })
   .catch(err => {
     console.error('Order save error:', err);
-    showNotification('순서 저장에 실패했습니다', 'error');
+    showNotification('순서 저장에 실패했습니다: ' + err.message, 'error');
   });
 }
-
+// Swiper 순서 업데이트 함수 개선
 function updateSwiperOrder() {
   if (!swiper) return;
   
@@ -810,8 +834,10 @@ function updateSwiperOrder() {
   
   if (!swiperWrapper) return;
   
+  // 기존 슬라이드 제거
   swiperWrapper.innerHTML = '';
   
+  // 새 순서대로 슬라이드 추가
   coverItems.forEach(item => {
     const img = item.querySelector('img');
     if (img) {
@@ -822,10 +848,37 @@ function updateSwiperOrder() {
     }
   });
   
+  // 스와이퍼 업데이트
   swiper.update();
   swiper.slideTo(0);
 }
-
+function updateSwiperOrder() {
+  if (!swiper) return;
+  
+  const coverItems = Array.from(document.querySelectorAll('.cover-item'));
+  const swiperWrapper = document.querySelector('#headerSwiper .swiper-wrapper');
+  
+  if (!swiperWrapper) return;
+  
+  // 기존 슬라이드 제거
+  swiperWrapper.innerHTML = '';
+  
+  // 새 순서대로 슬라이드 추가
+  coverItems.forEach(item => {
+    const img = item.querySelector('img');
+    if (img) {
+      const slide = document.createElement('div');
+      slide.className = 'swiper-slide';
+      slide.innerHTML = `<img src="${img.src}" alt="header">`;
+      swiperWrapper.appendChild(slide);
+    }
+  });
+  
+  // 스와이퍼 업데이트
+  swiper.update();
+  swiper.slideTo(0);
+}
+// 알림
 function showNotification(message, type = 'success') {
   const alertDiv = document.createElement('div');
   alertDiv.className = `alert alert-${type === 'error' ? 'danger' : 'success'} auto-dismiss`;
@@ -835,6 +888,7 @@ function showNotification(message, type = 'success') {
   setTimeout(() => alertDiv.remove(), 3500);
 }
 
+// 초기화
 document.addEventListener('DOMContentLoaded', () => {
   initSwiper();
   document.querySelectorAll('.auto-dismiss').forEach(alert => setTimeout(() => alert.remove(), 3500));

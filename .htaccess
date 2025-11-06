@@ -1,0 +1,28 @@
+# .htaccess
+RewriteEngine On
+RewriteBase /
+
+# 1️⃣ 정적 파일들은 직접 제공 (PHP, CSS, JS, 이미지 등)
+RewriteCond %{REQUEST_FILENAME} -f
+RewriteCond %{REQUEST_URI} \.(php|css|js|png|jpg|jpeg|gif|svg|ico|woff|woff2|ttf|eot|mp4|webm)$ [NC]
+RewriteRule ^ - [L]
+
+# 2️⃣ 실제 파일이나 디렉토리가 존재하면 그대로 제공
+RewriteCond %{REQUEST_FILENAME} -f [OR]
+RewriteCond %{REQUEST_FILENAME} -d
+RewriteRule ^ - [L]
+
+# 3️⃣ /pages/ 경로는 리라이트하지 않음
+RewriteCond %{REQUEST_URI} ^/pages/
+RewriteRule ^ - [L]
+
+# 4️⃣ /api/ 경로는 리라이트하지 않음
+RewriteCond %{REQUEST_URI} ^/api/
+RewriteRule ^ - [L]
+
+# 5️⃣ /uploads/ 경로는 리라이트하지 않음
+RewriteCond %{REQUEST_URI} ^/uploads/
+RewriteRule ^ - [L]
+
+# 6️⃣ 나머지만 index.php로 라우팅
+RewriteRule ^(.*)$ index.php [L,QSA]

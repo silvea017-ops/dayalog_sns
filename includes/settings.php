@@ -53,7 +53,18 @@ function getAllSettings($pdo) {
 function getFaviconPath($pdo) {
     static $favicon = null;
     if ($favicon === null) {
-        $favicon = getSetting($pdo, 'favicon_path', 'puble/assets/images/favicon.ico');
+        $favicon = getSetting($pdo, 'favicon_path', 'assets/images/favicon.ico');
     }
     return $favicon;
+}
+
+/**
+ * 로고 경로 가져오기 (캐싱 지원)
+ */
+function getLogoPath($pdo) {
+    static $logo = null;
+    if ($logo === null) {
+        $logo = getSetting($pdo, 'site_logo', 'assets/images/logo.svg');
+    }
+    return $logo;
 }

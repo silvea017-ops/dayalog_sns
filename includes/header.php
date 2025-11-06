@@ -1,13 +1,23 @@
 <?php
 if (session_status() === PHP_SESSION_NONE) session_start();
+
+// 설정 파일 로드
 $settings_file = __DIR__ . '/settings.php';
 if (file_exists($settings_file)) {
     require_once $settings_file;
     $favicon = getFaviconPath($pdo);
     $site_name = getSetting($pdo, 'site_name', 'Dayalog');
+    $site_logo = getLogoPath($pdo);
 } else {
     $favicon = 'assets/images/favicon.ico';
     $site_name = 'Dayalog';
+    $site_logo = 'assets/images/logo.svg';
+}
+
+
+// DB 연결 먼저 확인
+if (!isset($pdo)) {
+    require_once dirname(__DIR__) . '/config/db.php';
 }
 
 if (!defined('BASE_URL')) {
@@ -39,11 +49,73 @@ if ($show_splash) {
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title><?php echo htmlspecialchars($site_name); ?></title>
     
-    <link rel="icon" type="image/x-icon" href="../<?php echo htmlspecialchars($favicon); ?>">
-    <link rel="shortcut icon" type="image/x-icon" href="../<?php echo htmlspecialchars($favicon); ?>">
-    <link rel="apple-touch-icon" href="../<?php echo htmlspecialchars($favicon); ?>">
+    <!-- 파비콘 경로 수정 -->
+    <link rel="icon" type="image/x-icon" href="<?php echo BASE_URL . '/' . htmlspecialchars($favicon); ?>">
+    <link rel="shortcut icon" type="image/x-icon" href="<?php echo BASE_URL . '/' . htmlspecialchars($favicon); ?>">
+    <link rel="apple-touch-icon" href="<?php echo BASE_URL . '/' . htmlspecialchars($favicon); ?>">
     
     <style>
+         html {
+        visibility: visible;
+        opacity: 1;
+    }
+    
+    body[data-theme="light"] {
+        --bg-primary: #ffffff;
+        --bg-secondary: #f8f9fa;
+        --bg-hover: #f1f3f5;
+        --text-primary: #212529;
+        --text-secondary: #6c757d;
+        --border-color: #dee2e6;
+        --primary-color: #667eea;
+        --primary-hover: #5568d3;
+        --shadow-sm: 0 1px 2px rgba(0,0,0,0.05);
+    }
+    
+    body[data-theme="dark"] {
+        --bg-primary: #1a1d23;
+        --bg-secondary: #22262e;
+        --bg-hover: #2a2f38;
+        --text-primary: #e9ecef;
+        --text-secondary: #adb5bd;
+        --border-color: #373d47;
+        --primary-color: #667eea;
+        --primary-hover: #5568d3;
+        --shadow-sm: 0 1px 2px rgba(0,0,0,0.2);
+    }
+    
+    * {
+        transition: none !important;
+    }
+    
+    body {
+        background: var(--bg-primary);
+        color: var(--text-primary);
+        margin: 0;
+        padding: 0;
+    }
+    
+    body * {
+        transition: background-color 0.2s ease, color 0.2s ease, border-color 0.2s ease !important;
+    }
+    
+    .page-wrapper {
+        opacity: 1;
+        visibility: visible;
+    }
+    
+    /* 로고 크기 고정 */
+    .brand-logo {
+        width: 32px !important;
+        height: 32px !important;
+        object-fit: contain;
+    }
+    
+    /* 이미지 깜빡임 방지 */
+    img {
+        image-rendering: -webkit-optimize-contrast;
+        image-rendering: crisp-edges;
+    }
         body[data-theme="light"] {
             --bg-primary: #ffffff;
             --bg-secondary: #f8f9fa;
@@ -80,7 +152,7 @@ if ($show_splash) {
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     <link rel="stylesheet" href="../assets/css/style.css">
-    
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/bodymovin/5.12.2/lottie.min.js"></script>
     <script>
         (function() {
             const theme = document.cookie.split('; ').find(row => row.startsWith('dayalog_theme='));
@@ -95,8 +167,8 @@ if ($show_splash) {
 <!-- 로딩 스플래시 스크린 -->
 <div id="loadingSplash" class="loading-splash">
   <div class="loading-content">
-    <img src="<?php echo ASSETS_URL; ?>/images/logo.svg" class="logo-animation" alt="Dayalog" width="80" height="80">
-    <h2 class="loading-title">Dayalog</h2>
+    <img src="<?php echo BASE_URL . '/' . htmlspecialchars($site_logo); ?>" class="logo-animation" alt="<?php echo htmlspecialchars($site_name); ?>" width="80" height="80">
+    <h2 class="loading-title"><?php echo htmlspecialchars($site_name); ?></h2>
     <div class="loading-spinner"></div>
   </div>
 </div>
@@ -200,12 +272,12 @@ window.addEventListener('load', function() {
 <nav class="modern-navbar">
   <div class="navbar-container">
     <!-- 로고 영역 -->
-    <div class="navbar-section navbar-brand-section">
-      <a class="brand-link" href="<?php echo BASE_URL; ?>/pages/<?php echo (!isset($_SESSION['user']) || $show_all_tab) ? 'index.php' : 'following.php'; ?>">
-        <img src="<?php echo ASSETS_URL; ?>/images/logo.svg" alt="Dayalog" class="brand-logo">
-        <strong class="brand-text">Dayalog</strong>
-      </a>
-    </div>
+  <div class="navbar-section navbar-brand-section">
+  <a class="brand-link" href="<?php echo BASE_URL; ?>/pages/<?php echo (!isset($_SESSION['user']) || $show_all_tab) ? 'index.php' : 'following.php'; ?>">
+    <img src="<?php echo BASE_URL . '/' . htmlspecialchars($site_logo); ?>" alt="<?php echo htmlspecialchars($site_name); ?>" class="brand-logo">
+    <strong class="brand-text"><?php echo htmlspecialchars($site_name); ?></strong>
+  </a>
+</div>
     
     <?php if(isset($_SESSION['user'])): ?>
     <!-- 왼쪽 탭 네비게이션 -->
@@ -252,16 +324,7 @@ window.addEventListener('load', function() {
                    value="<?php echo isset($_GET['q']) ? htmlspecialchars($_GET['q']) : ''; ?>">
           </div>
         </form>
-        <!-- DM 버튼 -->
-<a href="<?php echo BASE_URL; ?>/pages/messages.php" 
-   class="nav-icon-btn dm-btn" 
-   title="메시지">
-  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-    <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
-  </svg>
-  <span class="dm-badge" id="dmBadge" style="display: none;">0</span>
-</a>
-
+        
         <!-- 모바일 검색 버튼 -->
         <a href="<?php echo BASE_URL; ?>/pages/search.php" class="nav-icon-btn mobile-search-btn <?php echo $isSearchPage ? 'active' : ''; ?>">
           <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -385,20 +448,6 @@ window.addEventListener('load', function() {
 <?php endif; ?>
 
 <style>
-  .dm-badge {
-  position: absolute;
-  top: 4px;
-  right: 4px;
-  background: #e0245e;
-  color: white;
-  border-radius: 10px;
-  padding: 2px 6px;
-  font-size: 11px;
-  font-weight: 600;
-  min-width: 18px;
-  text-align: center;
-  line-height: 1;
-}
 /* 모던 네비게이션 바 스타일 */
 .modern-navbar {
   position: sticky;
@@ -944,41 +993,6 @@ if (document.readyState === 'loading') {
   updateNotificationCount();
 }
 setInterval(updateNotificationCount, 30000);
-function updateDMCount() {
-  fetch('<?php echo BASE_URL; ?>/api/dm_get_unread_count.php')
-    .then(res => {
-      if (!res.ok) {
-        throw new Error('Network response was not ok');
-      }
-      return res.json();
-    })
-    .then(data => {
-      if (data.success) {
-        const badge = document.getElementById('dmBadge');
-        
-        if (data.unread_count > 0) {
-          badge.textContent = data.unread_count > 99 ? '99+' : data.unread_count;
-          badge.style.display = 'block';
-        } else {
-          badge.style.display = 'none';
-        }
-      }
-    })
-    .catch(err => {
-      console.error('DM count error:', err);
-      // 에러가 발생해도 배지는 숨김 처리
-      const badge = document.getElementById('dmBadge');
-      if (badge) badge.style.display = 'none';
-    });
-}
-
-// 페이지 로드 시 및 주기적으로 업데이트
-if (document.readyState === 'loading') {
-  document.addEventListener('DOMContentLoaded', updateDMCount);
-} else {
-  updateDMCount();
-}
-setInterval(updateDMCount, 30000); // 30초마다
 </script>
 <?php endif; ?>
 

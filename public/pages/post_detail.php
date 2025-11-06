@@ -191,25 +191,36 @@ if ($current_user_id) {
     $stmt->execute([$current_user_id, $post_id]);
     $user_liked = $stmt->fetch() ? true : false;
 }
-
-require_once INCLUDES_PATH . '/header.php';
-?>
+require_once INCLUDES_PATH . '/header.php'; ?>
 
 <div class="container mt-4">
   <div class="row justify-content-center">
     <div class="col-lg-6 col-md-8">
-      
-      <!-- 뒤로가기 버튼 -->
-      <div class="mb-3">
-        <a href="javascript:history.back()" class="text-decoration-none text-muted d-flex align-items-center gap-2">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <line x1="19" y1="12" x2="5" y2="12"></line>
-            <polyline points="12 19 5 12 12 5"></polyline>
-          </svg>
-          뒤로가기
-        </a>
-      </div>
-      
+
+<?php
+// redirect 파라미터 처리
+$redirect_url = $_GET['redirect'] ?? $_SERVER['HTTP_REFERER'] ?? BASE_URL . '/pages/index.php';
+
+// 상대 경로면 BASE_URL과 결합
+if (!preg_match('#^https?://#', $redirect_url)) {
+    // 앞에 슬래시가 없으면 추가
+    if (substr($redirect_url, 0, 1) !== '/') {
+        $redirect_url = '/' . $redirect_url;
+    }
+    $redirect_url = rtrim(BASE_URL, '/') . $redirect_url;
+}
+?>
+
+<div class="mb-3">
+  <a href="<?php echo htmlspecialchars($redirect_url); ?>"
+     class="text-decoration-none text-muted d-flex align-items-center gap-2 back-button">
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+      <line x1="19" y1="12" x2="5" y2="12"></line>
+      <polyline points="12 19 5 12 12 5"></polyline>
+    </svg>
+    뒤로가기
+  </a>
+</div>
       <!-- 게시물 카드 -->
       <div class="post-card mb-4" id="post-<?php echo $post['post_id']; ?>">
         <div class="post-header">
@@ -351,6 +362,19 @@ require_once INCLUDES_PATH . '/header.php';
 </div>
 
 <style>
+.back-button {
+  padding: 8px 12px;
+  border-radius: 8px;
+  transition: all 0.2s;
+  display: inline-flex !important;
+  width: fit-content;
+}
+
+.back-button:hover {
+  background: var(--bg-hover);
+  color: var(--text-primary) !important;
+}
+
 /* 미디어 그리드 */
 .post-media-grid {
   display: grid;

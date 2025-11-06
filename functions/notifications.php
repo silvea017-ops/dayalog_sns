@@ -360,43 +360,31 @@ function getNotificationMessage($notification) {
             return "<strong>{$nickname}</strong>님이 팔로우 요청을 수락했습니다.";
             
         case 'like':
-            $preview = '';
-            if (!empty($notification['post_content'])) {
-                $content = htmlspecialchars($notification['post_content']);
-                $preview = mb_strlen($content) > 30 
-                    ? mb_substr($content, 0, 30) . '...' 
-                    : $content;
-                $preview = '<div class="notification-preview">"' . $preview . '"</div>';
-            }
-            return "<strong>{$nickname}</strong>님이 회원님의 게시물을 좋아합니다." . $preview;
+            return "<strong>{$nickname}</strong>님이 회원님의 게시물을 좋아합니다.";
             
         case 'comment':
-            $preview = '';
+            // 댓글 내용을 직접 표시
             if (!empty($notification['comment_content'])) {
                 $content = htmlspecialchars($notification['comment_content']);
-                $preview = mb_strlen($content) > 30 
-                    ? mb_substr($content, 0, 30) . '...' 
-                    : $content;
-                $preview = '<div class="notification-preview">"' . $preview . '"</div>';
-            } elseif (!empty($notification['post_content'])) {
-                $content = htmlspecialchars($notification['post_content']);
-                $preview = mb_strlen($content) > 30 
-                    ? mb_substr($content, 0, 30) . '...' 
-                    : $content;
-                $preview = '<div class="notification-preview">게시물: "' . $preview . '"</div>';
+                // 긴 댓글은 잘라서 표시
+                if (mb_strlen($content) > 100) {
+                    $content = mb_substr($content, 0, 100) . '...';
+                }
+                return "<strong>{$nickname}</strong>: {$content}";
             }
-            return "<strong>{$nickname}</strong>님이 회원님의 게시물에 댓글을 남겼습니다." . $preview;
+            return "<strong>{$nickname}</strong>님이 회원님의 게시물에 댓글을 남겼습니다.";
             
         case 'reply':
-            $preview = '';
+            // 답글 내용을 직접 표시
             if (!empty($notification['comment_content'])) {
                 $content = htmlspecialchars($notification['comment_content']);
-                $preview = mb_strlen($content) > 30 
-                    ? mb_substr($content, 0, 30) . '...' 
-                    : $content;
-                $preview = '<div class="notification-preview">"' . $preview . '"</div>';
+                // 긴 답글은 잘라서 표시
+                if (mb_strlen($content) > 100) {
+                    $content = mb_substr($content, 0, 100) . '...';
+                }
+                return "<strong>{$nickname}</strong>: {$content}";
             }
-            return "<strong>{$nickname}</strong>님이 회원님의 댓글에 답글을 남겼습니다." . $preview;
+            return "<strong>{$nickname}</strong>님이 회원님의 댓글에 답글을 남겼습니다.";
             
         default:
             return "<strong>{$nickname}</strong>님의 알림";

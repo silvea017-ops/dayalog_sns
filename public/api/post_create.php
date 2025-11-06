@@ -24,8 +24,8 @@ if (empty($content) && !$has_media) {
 try {
     $pdo->beginTransaction();
     
-    // 게시물 생성
-    $stmt = $pdo->prepare("INSERT INTO posts (user_id, content) VALUES (?, ?)");
+    // 게시물 생성 - media_type 기본값 설정
+    $stmt = $pdo->prepare("INSERT INTO posts (user_id, content, media_type) VALUES (?, ?, 'image')");
     $stmt->execute([$user_id, $content]);
     $post_id = $pdo->lastInsertId();
     
@@ -53,13 +53,16 @@ try {
             'video/mp4', 'video/webm', 'video/ogg', 'video/quicktime'
         ];
         $max_size = 50 * 1024 * 1024; // 50MB (영상 고려)
-        $max_media = 4; // 최대 4개로 제한
+        $max_media = 8; // 최대 8개
         
         $media_count = min(count($_FILES['images']['name']), $max_media);
         
+        // post_images 테이블에 삽입 (media_type 컬럼 포함)
         $stmt = $pdo->prepare("INSERT INTO post_images (post_id, image_path, image_order, media_type) VALUES (?, ?, ?, ?)");
         
         $uploaded_count = 0;
+        $has_video = false;
+        
         for ($i = 0; $i < $media_count; $i++) {
             if (!isset($_FILES['images']['error'][$i]) || $_FILES['images']['error'][$i] !== UPLOAD_ERR_OK) {
                 continue;
@@ -78,6 +81,9 @@ try {
             
             // 미디어 타입 판별
             $media_type = strpos($file_type, 'video') !== false ? 'video' : 'image';
+            if ($media_type === 'video') {
+                $has_video = true;
+            }
             
             $extension = pathinfo($_FILES['images']['name'][$i], PATHINFO_EXTENSION);
             $filename = 'post_' . $post_id . '_' . time() . '_' . $uploaded_count . '.' . $extension;
@@ -85,11 +91,18 @@ try {
             
             if (move_uploaded_file($_FILES['images']['tmp_name'][$i], $filepath)) {
                 $db_path = 'uploads/posts/' . $filename;
+                // media_type 값을 명시적으로 전달
                 $stmt->execute([$post_id, $db_path, $uploaded_count, $media_type]);
                 $uploaded_count++;
             } else {
                 error_log("Failed to upload media: " . $_FILES['images']['name'][$i]);
             }
+        }
+        
+        // posts 테이블의 media_type 업데이트 (영상이 있으면 video로)
+        if ($has_video) {
+            $updateStmt = $pdo->prepare("UPDATE posts SET media_type = 'video' WHERE post_id = ?");
+            $updateStmt->execute([$post_id]);
         }
         
         if ($uploaded_count === 0 && empty($content)) {
@@ -119,6 +132,8 @@ try {
     
 } catch (Exception $e) {
     $pdo->rollBack();
+    error_log("Post create error: " . $e->getMessage());
+    error_log("Stack trace: " . $e->getTraceAsString());
     $_SESSION['error_message'] = $e->getMessage();
     header('Location: ' . $_SERVER['HTTP_REFERER'] ?? BASE_URL . '/pages/index.php');
 }
