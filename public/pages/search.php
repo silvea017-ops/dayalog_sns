@@ -258,8 +258,8 @@ $post_count = count($post_results);
                         <?php echo $post['comment_count']; ?>
                       </span>
                       <span class="text-muted">
-                        <?php echo date('Y.m.d', strtotime($post['created_at'])); ?>
-                      </span>
+  <?php echo formatPostDate($post['created_at']); ?>
+</span>
                     </div>
                   </a>
                 </div>

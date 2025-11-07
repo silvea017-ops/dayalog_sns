@@ -84,7 +84,7 @@ function renderCommentTree($pdo, $post_id, $parent_id = null, $depth = 0, $max_v
                   <a href="<?php echo BASE_URL; ?>/pages/user_profile.php?id=<?php echo $comment['user_id']; ?>" class="comment-author">
                     <strong><?php echo htmlspecialchars($comment['nickname']); ?></strong>
                   </a>
-                  <small class="text-muted"><?php echo htmlspecialchars($comment['created_at']); ?></small>
+                  <small class="text-muted"><?php echo formatPostDate($comment['created_at']); ?></small>
                 </div>
                 <p class="comment-text"><?php echo nl2br(htmlspecialchars($comment['content'])); ?></p>
                 
@@ -112,20 +112,28 @@ function renderCommentTree($pdo, $post_id, $parent_id = null, $depth = 0, $max_v
             </div>
             
             <?php if($current_user): ?>
-            <div class="reply-form" id="reply-form-<?php echo $comment['comment_id']; ?>" style="display: none; margin-left: <?php echo $is_nested ? '48px' : '48px'; ?>;">
-              <form method="post" action="<?php echo BASE_URL; ?>/api/comment_add.php" onsubmit="handleCommentSubmit(event, <?php echo $post_id; ?>)">
-                <input type="hidden" name="post_id" value="<?php echo $post_id; ?>">
-                <input type="hidden" name="parent_comment_id" value="<?php echo $comment['comment_id']; ?>">
-                <div class="d-flex gap-2 align-items-start">
-                  <img src="<?php echo getProfileImageUrl($current_user['profile_img']); ?>" 
-                       class="comment-avatar" alt="profile">
-                  <input type="text" name="content" class="form-control form-control-sm" 
-                         placeholder="@<?php echo htmlspecialchars($comment['nickname']); ?>님에게 답글..." required>
-                  <button type="submit" class="btn btn-sm btn-primary">등록</button>
-                  <button type="button" class="btn btn-sm btn-secondary" onclick="hideReplyForm(<?php echo $comment['comment_id']; ?>)">취소</button>
-                </div>
-              </form>
-            </div>
+           <div class="reply-form" id="reply-form-<?php echo $comment['comment_id']; ?>" style="display: none; margin-left: <?php echo $is_nested ? '48px' : '48px'; ?>;">
+  <form method="post" action="<?php echo BASE_URL; ?>/api/comment_add.php" onsubmit="handleCommentSubmit(event, <?php echo $post_id; ?>)">
+    <input type="hidden" name="post_id" value="<?php echo $post_id; ?>">
+    <input type="hidden" name="parent_comment_id" value="<?php echo $comment['comment_id']; ?>">
+    <div class="reply-input-wrapper">
+      <img src="<?php echo getProfileImageUrl($current_user['profile_img']); ?>" 
+           class="comment-avatar" alt="profile">
+      <div class="reply-input-container">
+        <input type="text" name="content" class="form-control form-control-sm reply-input" 
+               placeholder="@<?php echo htmlspecialchars($comment['nickname']); ?>님에게 답글..." 
+               maxlength="1000" required>
+        <div class="reply-input-footer">
+          <span class="reply-char-counter">1000자 남음</span>
+          <div class="reply-buttons">
+            <button type="submit" class="btn btn-sm btn-primary">등록</button>
+            <button type="button" class="btn btn-sm btn-secondary" onclick="hideReplyForm(<?php echo $comment['comment_id']; ?>)">취소</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </form>
+</div>
             <?php endif; ?>
           <?php endif; ?>
           
@@ -233,7 +241,7 @@ if (!preg_match('#^https?://#', $redirect_url)) {
               <a href="<?php echo BASE_URL; ?>/pages/user_profile.php?id=<?php echo $post['user_id']; ?>">
                 <strong class="post-author"><?php echo htmlspecialchars($post['nickname']); ?></strong>
               </a>
-              <div class="post-time"><?php echo htmlspecialchars($post['created_at']); ?></div>
+              <div class="post-time"><?php echo htmlspecialchars(formatPostDate($post['created_at'])); ?></div>
             </div>
             
             <?php if($current_user_id && $current_user_id === $post['user_id']): ?>
@@ -338,17 +346,22 @@ if (!preg_match('#^https?://#', $redirect_url)) {
           </div>
           
           <?php if($current_user_id): ?>
-          <div class="comment-form">
-            <form method="post" action="<?php echo BASE_URL; ?>/api/comment_add.php" onsubmit="handleCommentSubmit(event, <?php echo $post['post_id']; ?>)">
-              <input type="hidden" name="post_id" value="<?php echo $post['post_id']; ?>">
-              <div class="d-flex gap-2">
-                <img src="<?php echo getProfileImageUrl($_SESSION['user']['profile_img']); ?>" 
-                     class="comment-avatar" alt="profile">
-                <input type="text" name="content" class="form-control" placeholder="댓글을 입력하세요..." required>
-                <button type="submit" class="btn btn-primary">등록</button>
-              </div>
-            </form>
-          </div>
+         <div class="comment-form">
+  <form method="post" action="<?php echo BASE_URL; ?>/api/comment_add.php" onsubmit="handleCommentSubmit(event, <?php echo $post['post_id']; ?>)">
+    <input type="hidden" name="post_id" value="<?php echo $post['post_id']; ?>">
+    <div class="comment-input-wrapper">
+      <img src="<?php echo getProfileImageUrl($_SESSION['user']['profile_img']); ?>" 
+           class="comment-avatar" alt="profile">
+      <div class="comment-input-container">
+        <textarea name="content" class="comment-input" placeholder="댓글을 입력하세요..." maxlength="1000" required></textarea>
+        <div class="comment-input-footer">
+          <span class="comment-char-counter">1000자 남음</span>
+          <button type="submit" class="btn btn-primary btn-sm">등록</button>
+        </div>
+      </div>
+    </div>
+  </form>
+</div>
           <?php else: ?>
           <div class="text-center py-3">
             <a href="<?php echo BASE_URL; ?>/pages/login.php">로그인</a>하여 댓글을 작성하세요
@@ -362,6 +375,90 @@ if (!preg_match('#^https?://#', $redirect_url)) {
 </div>
 
 <style>
+/* 답글 입력 래퍼 */
+.reply-input-wrapper {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+}
+
+.reply-input-container {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.reply-input {
+  width: 100%;
+  padding: 8px 12px;
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  font-size: 14px;
+}
+
+.reply-input-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+}
+
+.reply-char-counter {
+  font-size: 12px;
+  color: var(--text-secondary);
+}
+
+.reply-char-counter.warning {
+  color: #f59e0b;
+  font-weight: 600;
+}
+
+.reply-char-counter.danger {
+  color: #dc3545;
+  font-weight: 600;
+}
+
+.reply-buttons {
+  display: flex;
+  gap: 4px;
+}
+
+/* 댓글 글자수 카운터 스타일 */
+.comment-char-counter {
+  font-size: 13px;
+  color: var(--text-secondary);
+}
+
+.comment-char-counter.warning {
+  color: #f59e0b;
+  font-weight: 600;
+}
+
+.comment-char-counter.danger {
+  color: #dc3545;
+  font-weight: 600;
+}
+
+/* 댓글 폼 버튼 가로 배치 */
+.comment-form .d-flex,
+.reply-form .d-flex {
+  display: flex !important;
+  flex-direction: row !important;
+  align-items: flex-start;
+}
+
+.comment-form input[type="text"],
+.reply-form input[type="text"] {
+  flex: 1;
+}
+
+.comment-form button,
+.reply-form button {
+  flex-shrink: 0;
+  white-space: nowrap;
+}
+
 .back-button {
   padding: 8px 12px;
   border-radius: 8px;
@@ -564,12 +661,14 @@ if (!preg_match('#^https?://#', $redirect_url)) {
   font-size: 15px;
   line-height: 1.5;
   word-wrap: break-word;
+  word-break: break-word;
 }
 
 .comment-actions {
   display: flex;
   gap: 16px;
   align-items: center;
+  flex-wrap: wrap;
 }
 
 .action-btn {
@@ -643,8 +742,79 @@ if (!preg_match('#^https?://#', $redirect_url)) {
   border-top: 1px solid var(--border-color);
 }
 
+/* 댓글 입력 래퍼 - 개선된 레이아웃 */
+.comment-input-wrapper {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+}
+
+.comment-input-container {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.comment-input {
+  width: 100%;
+  min-height: 80px;
+  padding: 12px;
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  font-size: 14px;
+  resize: vertical;
+  font-family: inherit;
+}
+
+.comment-input:focus {
+  outline: none;
+  border-color: var(--primary-color);
+}
+
+.comment-input-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+}
+
 .like-btn.liked {
   color: #e0245e;
+}
+
+/* 반응형 처리 */
+@media (max-width: 576px) {
+  .comment-input-wrapper,
+  .reply-input-wrapper {
+    gap: 8px;
+  }
+  
+  .comment-avatar {
+    width: 32px;
+    height: 32px;
+  }
+  
+  .comment-input {
+    min-height: 60px;
+    padding: 10px;
+    font-size: 13px;
+  }
+  
+  .reply-input {
+    padding: 8px 10px;
+    font-size: 13px;
+  }
+  
+  .comment-input-footer,
+  .reply-input-footer {
+    flex-wrap: wrap;
+  }
+  
+  .load-more-comments {
+    margin-left: 40px;
+    font-size: 13px;
+  }
 }
 </style>
 
@@ -786,6 +956,51 @@ function sharePost(postId) {
     });
   }
 }
+// 페이지 로드 시 모든 입력창 설정
+document.addEventListener('DOMContentLoaded', function() {
+  // 댓글 입력창 글자수 카운터
+  function setupCharCounter(input, counter, maxLength = 1000) {
+    if (!input || !counter) return;
+    
+    input.addEventListener('input', function() {
+      const remaining = maxLength - this.value.length;
+      counter.textContent = `${remaining}자 남음`;
+      
+      counter.classList.remove('warning', 'danger');
+      if (remaining < 100) counter.classList.add('warning');
+      if (remaining < 0) counter.classList.add('danger');
+    });
+  }
+  
+  // 메인 댓글 입력창
+  document.querySelectorAll('.comment-input').forEach(textarea => {
+    const container = textarea.closest('.comment-input-container');
+    const counter = container?.querySelector('.comment-char-counter');
+    setupCharCounter(textarea, counter);
+  });
+  
+  // 동적으로 생성되는 답글 폼을 위한 MutationObserver
+  const observer = new MutationObserver(mutations => {
+    mutations.forEach(mutation => {
+      mutation.addedNodes.forEach(node => {
+        if (node.nodeType === 1) {
+          // 답글 입력창
+          const replyInputs = node.querySelectorAll?.('.reply-input');
+          replyInputs?.forEach(input => {
+            const container = input.closest('.reply-input-container');
+            const counter = container?.querySelector('.reply-char-counter');
+            if (!input.dataset.listenerAdded) {
+              setupCharCounter(input, counter);
+              input.dataset.listenerAdded = 'true';
+            }
+          });
+        }
+      });
+    });
+  });
+  
+  observer.observe(document.body, { childList: true, subtree: true });
+});
 </script>
 
 <?php require_once INCLUDES_PATH . '/footer.php'; ?>

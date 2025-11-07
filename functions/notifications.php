@@ -358,6 +358,10 @@ function getNotificationMessage($notification) {
             
         case 'follow_accept':
             return "<strong>{$nickname}</strong>님이 팔로우 요청을 수락했습니다.";
+        
+        // 새로 추가: 일반 팔로우 (비공개 계정이 아닐 때)
+        case 'follow':
+            return "<strong>{$nickname}</strong>님이 회원님을 팔로우했습니다.";
             
         case 'like':
             return "<strong>{$nickname}</strong>님이 회원님의 게시물을 좋아합니다.";
@@ -367,8 +371,8 @@ function getNotificationMessage($notification) {
             if (!empty($notification['comment_content'])) {
                 $content = htmlspecialchars($notification['comment_content']);
                 // 긴 댓글은 잘라서 표시
-                if (mb_strlen($content) > 100) {
-                    $content = mb_substr($content, 0, 100) . '...';
+                if (mb_strlen($content) > 50) {
+                    $content = mb_substr($content, 0, 50) . '...';
                 }
                 return "<strong>{$nickname}</strong>: {$content}";
             }
@@ -379,8 +383,8 @@ function getNotificationMessage($notification) {
             if (!empty($notification['comment_content'])) {
                 $content = htmlspecialchars($notification['comment_content']);
                 // 긴 답글은 잘라서 표시
-                if (mb_strlen($content) > 100) {
-                    $content = mb_substr($content, 0, 100) . '...';
+                if (mb_strlen($content) > 50) {
+                    $content = mb_substr($content, 0, 50) . '...';
                 }
                 return "<strong>{$nickname}</strong>: {$content}";
             }
@@ -390,6 +394,7 @@ function getNotificationMessage($notification) {
             return "<strong>{$nickname}</strong>님의 알림";
     }
 }
+
 /**
  * 알림 링크 생성
  */
@@ -403,6 +408,7 @@ function getNotificationLink($notification, $base_url, $pdo_param = null) {
         case 'follow_request':
             return $base_url . '/pages/follow_requests.php';
         case 'follow_accept':
+        case 'follow':  // 새로 추가
             return $base_url . '/pages/user_profile.php?id=' . $notification['from_user_id'];
         case 'like':
         case 'comment':

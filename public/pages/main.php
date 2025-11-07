@@ -388,11 +388,8 @@ $posts = $stmt->fetchAll();
           <strong><?php echo htmlspecialchars($post['nickname']); ?></strong>
         </a>
         <?php if($post['is_private']): ?>
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="flex-shrink: 0;">
-            <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
-            <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
-          </svg>
-        <?php endif; ?>
+  <i class="fa-solid fa-lock" style="font-size: 12px; flex-shrink: 0;"></i>
+<?php endif; ?>
         <span class="text-muted">@<?php echo htmlspecialchars($post['username']); ?></span>
         <span class="text-muted">·</span>
         <span class="text-muted" data-time="<?php echo $post['created_at']; ?>">
@@ -2820,7 +2817,54 @@ window.addEventListener('load', function() {
     sessionStorage.removeItem('openComments');
   }
 });
-
+// 댓글 입력 시 글자수 카운터 업데이트
+document.addEventListener('DOMContentLoaded', function() {
+  // 모든 댓글 입력창에 이벤트 리스너 추가
+  function setupCommentInput(textarea) {
+    const container = textarea.closest('.comment-input-container');
+    const counter = container?.querySelector('.comment-char-counter');
+    
+    if (!counter) return;
+    
+    textarea.addEventListener('input', function() {
+      const remaining = 1000 - this.value.length;
+      counter.textContent = `${remaining}자 남음`;
+      
+      if (remaining < 100) {
+        counter.classList.add('warning');
+      } else {
+        counter.classList.remove('warning');
+      }
+      
+      if (remaining < 0) {
+        counter.classList.add('danger');
+      } else {
+        counter.classList.remove('danger');
+      }
+    });
+  }
+    
+  // 페이지 로드 시 모든 댓글 입력창에 적용
+  document.querySelectorAll('.comment-input').forEach(setupCommentInput);
+  
+  // 답글 폼이 동적으로 생성될 때를 대비한 MutationObserver
+  const observer = new MutationObserver(function(mutations) {
+    mutations.forEach(function(mutation) {
+      mutation.addedNodes.forEach(function(node) {
+        if (node.nodeType === 1) {
+          const inputs = node.querySelectorAll ? node.querySelectorAll('.comment-input, input[name="content"]') : [];
+          inputs.forEach(input => {
+            if (input.classList.contains('comment-input')) {
+              setupCommentInput(input);
+            }
+          });
+        }
+      });
+    });
+  });
+  
+  observer.observe(document.body, { childList: true, subtree: true });
+});
 // 자동 사라지는 알림
 document.addEventListener('DOMContentLoaded', function() {
   const alerts = document.querySelectorAll('.auto-dismiss');

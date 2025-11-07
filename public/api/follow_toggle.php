@@ -1,5 +1,4 @@
 <?php
-// public/api/follow_toggle.php
 require_once __DIR__ . '/../../config/db.php';
 require_once __DIR__ . '/../../includes/auth.php';
 require_once __DIR__ . '/../../functions/notifications.php';
@@ -7,7 +6,7 @@ require_once __DIR__ . '/../../functions/notifications.php';
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $following_id = $_POST['user_id'] ?? null;
     $follower_id = $_SESSION['user']['user_id'];
-    $redirect = $_POST['redirect'] ?? '../pages/user_profile.php?id=' . $following_id;
+    $redirect = $_POST['redirect'] ?? 'user_profile.php?id=' . $following_id;
     
     if ($following_id && $following_id != $follower_id) {
         // 이미 팔로우/요청 중인지 확인
@@ -34,7 +33,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $stmt = $pdo->prepare("INSERT INTO follows (follower_id, following_id, status, requested_at) VALUES (?, ?, 'pending', NOW())");
                 $stmt->execute([$follower_id, $following_id]);
                 
-                // 알림 생성
+                // 팔로우 요청 알림 생성
                 createNotification($pdo, $following_id, $follower_id, 'follow_request');
                 
                 $_SESSION['success_message'] = '팔로우 요청을 보냈습니다.';
@@ -43,8 +42,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $stmt = $pdo->prepare("INSERT INTO follows (follower_id, following_id, status) VALUES (?, ?, 'accepted')");
                 $stmt->execute([$follower_id, $following_id]);
                 
-                // 알림 생성 (공개 계정은 follow_accept 알림)
-                createNotification($pdo, $following_id, $follower_id, 'follow_accept');
+                // 일반 팔로우 알림 생성 (follow_accept가 아닌 follow)
+                createNotification($pdo, $following_id, $follower_id, 'follow');
                 
                 $_SESSION['success_message'] = '팔로우했습니다.';
             }

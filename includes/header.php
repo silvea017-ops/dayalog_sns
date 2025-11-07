@@ -1,5 +1,10 @@
 <?php
-if (session_status() === PHP_SESSION_NONE) session_start();
+// 세션 설정 (30일 유지)
+if (session_status() === PHP_SESSION_NONE) {
+    ini_set('session.cookie_lifetime', 30 * 24 * 60 * 60);
+    ini_set('session.gc_maxlifetime', 30 * 24 * 60 * 60);
+    session_start();
+}
 
 // 설정 파일 로드
 $settings_file = __DIR__ . '/settings.php';
@@ -14,7 +19,6 @@ if (file_exists($settings_file)) {
     $site_logo = 'assets/images/logo.svg';
 }
 
-
 // DB 연결 먼저 확인
 if (!isset($pdo)) {
     require_once dirname(__DIR__) . '/config/db.php';
@@ -23,7 +27,7 @@ if (!isset($pdo)) {
 if (!defined('BASE_URL')) {
     require_once dirname(__DIR__) . '/config/paths.php';
 }
-
+require_once FUNCTIONS_PATH . '/date_helper.php';
 $theme = isset($_COOKIE['dayalog_theme']) ? $_COOKIE['dayalog_theme'] : 'light';
 
 $show_all_tab = true;
@@ -388,17 +392,12 @@ window.addEventListener('load', function() {
     <?php echo $show_all_tab ? '전체 탭 숨기기' : '전체 탭 보이기'; ?>
   </a>
   <?php if(isset($_SESSION['user']['is_admin']) && $_SESSION['user']['is_admin']): ?>
-  <div class="dropdown-divider-custom"></div>
-  <a class="dropdown-item-custom" href="<?php echo BASE_URL; ?>/pages/admin_settings.php">
-    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-      <circle cx="12" cy="12" r="3"></circle>
-      <path d="M12 1v6m0 6v6"></path>
-      <path d="m4.93 4.93 4.24 4.24m5.66 5.66 4.24 4.24"></path>
-      <path d="m19.07 4.93-4.24 4.24m-5.66 5.66-4.24 4.24"></path>
-    </svg>
-    사이트 설정
-  </a>
-  <?php endif; ?>
+<div class="dropdown-divider-custom"></div>
+<a class="dropdown-item-custom" href="<?php echo BASE_URL; ?>/pages/admin_settings.php">
+  <i class="fa-solid fa-gears" style="width: 20px; text-align: center;"></i>
+  사이트 설정
+</a>
+<?php endif; ?>
 </div>
 
 <!-- 프로필 드롭다운 메뉴 -->

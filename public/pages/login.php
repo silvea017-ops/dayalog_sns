@@ -3,6 +3,9 @@
 require_once dirname(__DIR__, 2) . '/config/paths.php';
 require_once CONFIG_PATH . '/db.php';
 
+// 세션 시작 전에 쿠키 수명 설정
+ini_set('session.cookie_lifetime', 30 * 24 * 60 * 60); // 30일
+ini_set('session.gc_maxlifetime', 30 * 24 * 60 * 60);
 session_start();
 
 // 이미 로그인된 경우 리다이렉트
@@ -16,9 +19,9 @@ $error = '';
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $username = $_POST['username'] ?? '';
     $password = $_POST['password'] ?? '';
+    $remember = isset($_POST['remember']) && $_POST['remember'] === '1';
     
     if ($username && $password) {
-        // password 컬럼 추가!
         $stmt = $pdo->prepare("
             SELECT user_id, username, nickname, email, password, profile_img, bio, 
                    is_private, is_admin, show_all_tab, created_at 
@@ -29,15 +32,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $user = $stmt->fetch();
         
         if ($user && password_verify($password, $user['password'])) {
-            // show_all_tab 기본값 설정 (NULL이면 1로)
+            // show_all_tab 기본값 설정
             if (!isset($user['show_all_tab']) || $user['show_all_tab'] === null) {
                 $user['show_all_tab'] = 1;
-                
-                // DB 업데이트
                 $stmt = $pdo->prepare("UPDATE users SET show_all_tab = 1 WHERE user_id = ?");
                 $stmt->execute([$user['user_id']]);
             }
             
+            // 세션 생성
             $_SESSION['user'] = [
                 'user_id' => $user['user_id'],
                 'username' => $user['username'],
@@ -50,6 +52,29 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 'show_all_tab' => (int)$user['show_all_tab'],
                 'created_at' => $user['created_at']
             ];
+            
+            // 자동 로그인 체크 시 영구 쿠키 생성
+            if ($remember) {
+                // 랜덤 토큰 생성
+                $token = bin2hex(random_bytes(32));
+                
+                // 데이터베이스에 토큰 저장
+                $stmt = $pdo->prepare("UPDATE users SET remember_token = ? WHERE user_id = ?");
+                $stmt->execute([$token, $user['user_id']]);
+                
+                // 영구 쿠키 설정 (만료 시간: 10년 = 사실상 영구)
+                // 2038년 문제를 피하기 위해 2147483647 대신 10년 사용
+                $expire_time = time() + (365 * 10 * 24 * 60 * 60); // 10년
+                
+                setcookie('remember_token', $token, $expire_time, '/', '', false, true);
+                setcookie('remember_user', $user['user_id'], $expire_time, '/', '', false, true);
+                
+                // 자동 로그인 플래그 저장
+                $_SESSION['auto_login'] = true;
+            } else {
+                // 자동 로그인 OFF - 세션만 사용 (30일 유지)
+                $_SESSION['auto_login'] = false;
+            }
             
             header('Location: ' . BASE_URL . '/pages/index.php');
             exit;
@@ -98,6 +123,25 @@ require_once INCLUDES_PATH . '/header.php';
                                     <line x1="1" y1="1" x2="23" y2="23"></line>
                                 </svg>
                             </button>
+                        </div>
+                    </div>
+                    
+                    <!-- 자동 로그인 체크박스 -->
+                    <div class="mb-3">
+                        <div class="form-check custom-checkbox">
+                            <input type="checkbox" class="form-check-input" id="remember" name="remember" value="1">
+                            <label class="form-check-label" for="remember">
+                                <span class="remember-text">자동 로그인</span>
+                              
+                            </label>
+                        </div>
+                        <div class="login-info-text">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <circle cx="12" cy="12" r="10"></circle>
+                                <line x1="12" y1="16" x2="12" y2="12"></line>
+                                <line x1="12" y1="8" x2="12.01" y2="8"></line>
+                            </svg>
+                            공공기관과 공용PC에서 자동로그인을 켜지 마세요!
                         </div>
                     </div>
                     
@@ -178,6 +222,72 @@ require_once INCLUDES_PATH . '/header.php';
 .password-toggle-btn:focus {
     outline: none;
     box-shadow: 0 0 0 2px rgba(102, 126, 234, 0.2);
+}
+
+/* 커스텀 체크박스 스타일 */
+.custom-checkbox {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+}
+
+.custom-checkbox .form-check-input {
+    width: 20px;
+    height: 20px;
+    border: 2px solid var(--border-color);
+    border-radius: 4px;
+    background-color: var(--bg-secondary);
+    cursor: pointer;
+    margin: 2px 0 0 0;
+    flex-shrink: 0;
+}
+
+.custom-checkbox .form-check-input:checked {
+    background-color: var(--primary-color);
+    border-color: var(--primary-color);
+}
+
+.custom-checkbox .form-check-input:focus {
+    box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+}
+
+.custom-checkbox .form-check-label {
+    cursor: pointer;
+    margin: 0;
+    user-select: none;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.remember-text {
+    color: var(--text-primary);
+    font-size: 15px;
+    font-weight: 500;
+}
+
+.remember-description {
+    color: var(--text-secondary);
+    font-size: 13px;
+    line-height: 1.4;
+}
+
+.login-info-text {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin-top: 8px;
+    padding: 8px 12px;
+    background: var(--bg-secondary);
+    border-radius: 6px;
+    color: var(--text-secondary);
+    font-size: 13px;
+    line-height: 1.4;
+}
+
+.login-info-text svg {
+    flex-shrink: 0;
+    opacity: 0.7;
 }
 </style>
 

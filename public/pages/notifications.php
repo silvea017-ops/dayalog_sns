@@ -58,8 +58,8 @@ require_once INCLUDES_PATH . '/header.php';
                   <?php echo $message; ?>
                 </div>
                 <div class="notification-time">
-                  <?php echo htmlspecialchars($notification['created_at']); ?>
-                </div>
+  <?php echo formatPostDate($notification['created_at']); ?>
+</div>
                 
                 <?php if($notification['type'] === 'like' || $notification['type'] === 'comment'): ?>
                   <?php if(!empty($notification['post_image'])): ?>
@@ -87,23 +87,23 @@ require_once INCLUDES_PATH . '/header.php';
               <?php endif; ?>
               
               <div class="notification-icon">
-                <?php if($notification['type'] === 'follow_request' || $notification['type'] === 'follow_accept'): ?>
-                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
-                    <circle cx="8.5" cy="7" r="4"></circle>
-                    <line x1="20" y1="8" x2="20" y2="14"></line>
-                    <line x1="23" y1="11" x2="17" y2="11"></line>
-                  </svg>
-                <?php elseif($notification['type'] === 'like'): ?>
-                  <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="2">
-                    <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path>
-                  </svg>
-                <?php elseif($notification['type'] === 'comment' || $notification['type'] === 'reply'): ?>
-                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
-                  </svg>
-                <?php endif; ?>
-              </div>
+  <?php if($notification['type'] === 'follow_request' || $notification['type'] === 'follow_accept' || $notification['type'] === 'follow'): ?>
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+      <path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+      <circle cx="8.5" cy="7" r="4"></circle>
+      <line x1="20" y1="8" x2="20" y2="14"></line>
+      <line x1="23" y1="11" x2="17" y2="11"></line>
+    </svg>
+  <?php elseif($notification['type'] === 'like'): ?>
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="2">
+      <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path>
+    </svg>
+  <?php elseif($notification['type'] === 'comment' || $notification['type'] === 'reply'): ?>
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+      <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
+    </svg>
+  <?php endif; ?>
+</div>
             </a>
           <?php endforeach; ?>
         </div>

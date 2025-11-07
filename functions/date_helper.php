@@ -30,7 +30,8 @@ if (!function_exists('getRelativeTime')) {
         } elseif ($diff < 604800) {
             return floor($diff / 86400) . '일';
         } else {
-            return $past->format('n월 j일');
+            // 7일 이상이면 절대 시간으로 표시
+            return formatPostDate($datetime);
         }
     }
 }

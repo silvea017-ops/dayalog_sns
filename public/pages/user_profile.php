@@ -199,11 +199,8 @@ if ($can_view_content) {
             <h2 class="profile-name">
               <?php echo htmlspecialchars($user['nickname']); ?>
               <?php if($user['is_private']): ?>
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="ms-2" style="vertical-align: middle;">
-                  <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
-                  <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
-                </svg>
-              <?php endif; ?>
+  <i class="fa-solid fa-lock ms-2" style="font-size: 14px; vertical-align: middle;"></i>
+<?php endif; ?>
             </h2>
             <p class="profile-username">@<?php echo htmlspecialchars($user['username']); ?></p>
             <?php if($user['bio']): ?>
